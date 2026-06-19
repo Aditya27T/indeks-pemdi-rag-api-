@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+  chromadb:
+    image: chromadb/chroma:0.5.3
+    container_name: pemdi-chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+    networks:
+      - pemdi-network
+
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: pemdi-rag-agent
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data # Mount folder PDF
+      - embedding_cache:/root/.cache # Cache model embedding HuggingFace
+    env_file:
+      - .env
+    environment:
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+    depends_on:
+      - chromadb
+    networks:
+      - pemdi-network
+    restart: unless-stopped
+
+networks:
+  pemdi-network:
+    driver: bridge
+
+volumes:
+  chroma_data: # Persist vector DB
+  embedding_cache: # Persist model embedding (tidak download ulang tiap restart)
