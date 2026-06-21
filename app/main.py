@@ -114,8 +114,12 @@ async def health():
         "documents_indexed": doc_count
     }
 
-@app.get("/")
-async def root():
-    return {
-        "message": "Pemdi RAG API is running. Please use POST /chat to interact with the agent."
-    }
+from fastapi.staticfiles import StaticFiles
+import os
+
+# Create static dir if it doesn't exist to prevent crash before frontend is built
+if not os.path.exists("static"):
+    os.makedirs("static")
+
+# Mount static files at root
+app.mount("/", StaticFiles(directory="static", html=True), name="static")

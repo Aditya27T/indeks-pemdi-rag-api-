@@ -1,9 +1,10 @@
-# Pemdi RAG Agent
+# Pemdi RAG Agent & Web Interface
 
-Sistem *Retrieval-Augmented Generation* (RAG) cerdas yang dirancang untuk menganalisis dan menjawab pertanyaan seputar "Indeks Pemdi" berdasarkan dokumen pedoman yang terindeks secara otomatis.
+Sistem *Retrieval-Augmented Generation* (RAG) cerdas yang dirancang untuk menganalisis dan menjawab pertanyaan seputar "Indeks Pemdi" berdasarkan dokumen pedoman yang terindeks secara otomatis. Dilengkapi dengan antarmuka web interaktif yang mewah dan dibangun dalam satu image Docker.
 
 Aplikasi ini dibangun dengan *stack* modern:
-- **FastAPI** (Backend Framework)
+- **FastAPI** (Backend API Framework)
+- **Svelte & Vite** (Frontend Web UI - Multi-stage Build)
 - **LangGraph** (Stateful Agent Orchestration)
 - **LangChain** (RAG & Tooling)
 - **ChromaDB** (Vector Database)
@@ -29,48 +30,44 @@ Aplikasi ini dibangun dengan *stack* modern:
    ```
    *Perintah di atas akan secara otomatis:*
    - Menjalankan instance ChromaDB secara persisten.
-   - Melakukan *build* pada aplikasi FastAPI.
+   - Melakukan *build* Svelte Frontend (Node.js).
+   - Melakukan *build* aplikasi backend FastAPI sekaligus menyematkan UI (*multi-stage build*).
    - Mengunduh model *embedding* `intfloat/multilingual-e5-base` (hanya pada saat *run* pertama).
    - Memotong (*chunking*) dan memproses file PDF yang belum terindeks ke dalam Vector DB.
 
-3. **Cek Log Aplikasi**
-   Untuk memastikan bahwa RAG Agent sudah menyala dan index sudah selesai:
-   ```bash
-   docker compose logs -f app
-   ```
-   Tunggu hingga muncul pesan `Uvicorn running on http://0.0.0.0:8080`.
+3. **Buka Aplikasi (Frontend Web)**
+   Kini Anda tidak hanya bisa mengakses API, tetapi juga UI interaktif! Buka browser Anda pada:
+   👉 **[http://localhost:8080/](http://localhost:8080/)**
+
+   Di sana Anda akan menemukan:
+   - **Menu Chatbot**: Layar obrolan gaya LLM dengan dukungan Markdown dan anotasi referensi sumber halaman.
+   - **Menu Kalkulator**: Antarmuka untuk menghitung otomatis skor Indeks Pemdi Anda secara instan dari 20 indikator yang ada.
 
 ## Dokumentasi API (Swagger UI)
 
-Aplikasi ini berjalan pada Port `8080` secara bawaan. Anda bisa mengakses dokumentasi interaktif (Swagger UI) secara otomatis pada:
+Anda bisa tetap mengakses dokumentasi interaktif API backend (Swagger UI) secara otomatis pada:
 👉 **[http://localhost:8080/docs](http://localhost:8080/docs)**
 
-## Endpoint Utama
+## Endpoint Backend Utama
 
 ### 1. Chat (LangGraph RAG Agent)
 - `POST /chat`
 - Digunakan untuk melakukan obrolan dengan agen cerdas terkait dokumen Pemdi.
-**Contoh Payload:**
-```json
-{
-  "message": "Apa saja aspek penilaian dalam Indeks Pemdi?",
-  "session_id": "user-session-123"
-}
-```
 
-### 2. Root & Health Check
-- `GET /` : Menampilkan pesan selamat datang.
+### 2. Status & Health Check
 - `GET /health` : Mengecek status aplikasi dan jumlah dokumen PDF (chunks) yang telah berhasil diindeks ke database vektor ChromaDB.
+- `GET /` : *Diarahkan ke File Svelte Web UI.*
 
-### 3. Calculate Index (Tool Manual)
+### 3. Calculate Index
 - `POST /calculate-index`
-- Digunakan untuk menghitung nilai Indeks secara spesifik/manual berdasarkan input dari Frontend tanpa perlu obrolan AI panjang.
+- Digunakan untuk menghitung nilai Indeks secara matematis berdasarkan input indikator Pemdi.
 
 ## Struktur Direktori Utama
-- `app/` : *Source code* utama aplikasi Python (FastAPI, agent.py, rag.py, dll).
+- `app/` : *Source code* utama aplikasi Python dan Dockerfile Multi-Stage.
+  - `app/frontend/` : *Source code* Frontend (Svelte + Vite) dengan komponen terpisah.
 - `data/` : Folder wajib untuk menyimpan file dokumen PDF.
-- `.env` : File rahasia yang tidak di-push ke Github.
+- `.env` : File rahasia konfigurasi server.
 - `docker-compose.yml` : Konfigurasi orkestrasi container backend & database.
 
 ## Catatan Arsitektur
-Sistem ini secara khusus dirancang menggunakan pendekatan **JSON ReAct Parser** pada agen LangGraph. Teknik *prompting* tingkat lanjut ini digunakan untuk menjembatani kompatibilitas antara format standar bawaan Langchain dengan model Open-Source TokenRouter (seperti MiniMax-M3) yang restriktif terhadap skema JSON Tool-Calling konvensional.
+Sistem ini memadukan **Single Docker Image** untuk Frontend (SPA) dan Backend (API). Proses build memanfaatkan Node.js (untuk compile Svelte) lalu dicopy ke container Python FastAPI untuk di-*serve* pada root (`/`). Agen LangGraph juga dibangun menggunakan **JSON ReAct Parser** untuk kompatibilitas LLM MiniMax-M3 yang sangat tangguh di Bahasa Indonesia.
