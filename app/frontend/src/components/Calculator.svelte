@@ -7,7 +7,7 @@
 
   export let isActive = false;
 
-  const calculator = useCalculator();
+  const { isLoading, result, calculateIndex } = useCalculator();
   const indexChat = useChat();
   let chatInput = '';
   
@@ -20,7 +20,7 @@
   };
 
   function handleCalculate() {
-    calculator.calculateIndex(indicators);
+    calculateIndex(indicators);
     indexChat.clearChat(); // Reset chat when recalculating
   }
 
@@ -28,8 +28,8 @@
     if (!chatInput.trim()) return;
     
     let payload = chatInput;
-    if ($indexChat.messages.length === 1 && $calculator.result) {
-      const res = $calculator.result;
+    if ($indexChat.messages.length === 1 && $result) {
+      const res = $result;
       const rincian = Object.entries(res.detail_aspek).map(([k, v]) => `${k} (${v.toFixed(2)})`).join(', ');
       payload = `Hasil evaluasi saya: Nilai ${res.indeks_pemdi.toFixed(2)}, Predikat ${res.predikat}. Rincian: ${rincian}.\n\nPertanyaan: ${chatInput}`;
     }
@@ -109,18 +109,18 @@
       </div>
     {/each}
   </div>
-  <button class="calc-btn" on:click={handleCalculate} disabled={$calculator.isLoading}>
-    {$calculator.isLoading ? 'Menghitung...' : 'Hitung Indeks'}
+  <button class="calc-btn" on:click={handleCalculate} disabled={$isLoading}>
+    {$isLoading ? 'Menghitung...' : 'Hitung Indeks'}
   </button>
 
-  {#if $calculator.result}
+  {#if $result}
     <div class="result-card">
-      <h3>Hasil Evaluasi: {$calculator.result.predikat}</h3>
-      <div class="score">{$calculator.result.indeks_pemdi.toFixed(2)}</div>
+      <h3>Hasil Evaluasi: {$result.predikat}</h3>
+      <div class="score">{$result.indeks_pemdi.toFixed(2)}</div>
       
       <div class="result-details" style="display: flex; gap: 30px; flex-wrap: wrap; margin-top: 20px;">
         <div class="aspects" style="flex: 1; min-width: 250px;">
-          {#each Object.entries($calculator.result.detail_aspek) as [aspek, nilai]}
+          {#each Object.entries($result.detail_aspek) as [aspek, nilai]}
             <div class="aspect-row">
               <span>{aspek}</span>
               <strong>{Number(nilai).toFixed(2)}</strong>
@@ -128,7 +128,7 @@
           {/each}
         </div>
         <div class="chart-wrapper" style="flex: 1; min-width: 280px; max-width: 400px; height: 300px;">
-          <canvas use:renderRadarChart={$calculator.result}></canvas>
+          <canvas use:renderRadarChart={$result}></canvas>
         </div>
       </div>
     </div>
