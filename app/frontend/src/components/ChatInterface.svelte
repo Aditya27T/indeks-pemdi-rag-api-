@@ -1,49 +1,23 @@
 <script>
   import { marked } from 'marked';
   import DOMPurify from 'dompurify';
-
-  let messages = [
-    { role: 'assistant', content: 'Halo! Saya Agent Evaluasi Kinerja Pemdi. Ada yang bisa saya bantu terkait PermenPANRB No. 8 Tahun 2026?' }
-  ];
-  let inputMessage = '';
-  let isLoading = false;
-  let sessionId = 'session-' + Math.random().toString(36).substring(2, 9);
+  import { useChat } from '../hooks/useChat.js';
 
   export let isActive = true;
 
-  async function sendMessage() {
+  const chat = useChat();
+  let inputMessage = '';
+
+  function handleSend() {
     if (!inputMessage.trim()) return;
-    
-    const userMsg = inputMessage;
-    messages = [...messages, { role: 'user', content: userMsg }];
+    chat.sendMessage(inputMessage);
     inputMessage = '';
-    isLoading = true;
-
-    try {
-      const res = await fetch('/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg, session_id: sessionId })
-      });
-      const data = await res.json();
-      
-      let botResponse = data.answer;
-      if (data.sources && data.sources.length > 0) {
-         botResponse += '\n\n**Sumber:**\n' + data.sources.map(s => `- Halaman ${s.page}`).join('\n');
-      }
-
-      messages = [...messages, { role: 'assistant', content: botResponse }];
-    } catch (e) {
-      messages = [...messages, { role: 'assistant', content: 'Maaf, terjadi kesalahan saat menghubungi server.' }];
-    } finally {
-      isLoading = false;
-    }
   }
 
   function handleKeydown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      handleSend();
     }
   }
 
@@ -63,7 +37,7 @@
 
 <div class="chat-container" style="display: {isActive ? 'flex' : 'none'}">
   <div class="messages">
-    {#each messages as msg}
+    {#each $chat.messages as msg}
       <div class="message {msg.role}">
         <div class="avatar">
           {msg.role === 'assistant' ? '🤖' : '👤'}
@@ -73,7 +47,7 @@
         </div>
       </div>
     {/each}
-    {#if isLoading}
+    {#if $chat.isLoading}
       <div class="message assistant">
         <div class="avatar">🤖</div>
         <div class="bubble typing-indicator">
@@ -90,7 +64,7 @@
         placeholder="Tanyakan sesuatu tentang Evaluasi Kinerja Pemdi..."
         rows="1"
       ></textarea>
-      <button class="send-btn" on:click={sendMessage} disabled={!inputMessage.trim() || isLoading}>
+      <button class="send-btn" on:click={handleSend} disabled={!inputMessage.trim() || $chat.isLoading}>
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
       </button>
     </div>
